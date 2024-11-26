@@ -1,42 +1,74 @@
 #!/usr/bin/env python3
-"""
-DB module
+"""DB module
 """
 from sqlalchemy import create_engine
+from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
-from sqlalchemy.exc import InvalidRequestError
 from sqlalchemy.orm.session import Session
+from sqlalchemy.exc import InvalidRequestError
 from sqlalchemy.orm.exc import NoResultFound
+from typing import Dict
+
 from user import Base, User
+
+
 class DB:
-    """
-    DB class
+    """DB class
     """
 
     def __init__(self) -> None:
+        """Initialize a new DB instance
         """
-        Initialize a new DB instance
-        """
-        # either set echo=False or remove it entirely as the default value is false
-        self._engine = create_engine("sqlite:///a.db")
-        # Drops existing tables
+        self._engine = create_engine("sqlite:///a.db", echo=True)
         Base.metadata.drop_all(self._engine)
-        # creates new ones based on the models defined in user.py.
         Base.metadata.create_all(self._engine)
-        # Initializes the private __session attribute to None.
         self.__session = None
 
     @property
     def _session(self) -> Session:
+        """Memoized session object
         """
-        Memoize session object
-        """
-        # Checks if the private __session attribute is None.
         if self.__session is None:
-            # If it is, creates a new DBSession using the database
-            #   engine and assigns it to __session.
             DBSession = sessionmaker(bind=self._engine)
             self.__session = DBSession()
-            # Returns the current value of __session.
         return self.__session
 
+    def add_user(self, email: str, hashed_password: str) -> User:
+        """Adding User"""
+        user = User(email=email, hashed_password=hashed_password)
+        self._session.add(user)
+        self._session.commit()
+
+        return user
+
+    def find_user_by(self, **kwargs) -> User:
+        """returns the first row found in the users table as
+        filtered by the method’s input argument"""
+        if not kwargs:
+            raise InvalidRequestError
+
+        # get the columns name from the db
+        cols = User.__table__.columns.keys()
+        for key in kwargs.keys():
+            if key not in cols:
+                raise InvalidRequestError
+
+        user = self._session.query(User).filter_by(**kwargs).first()
+        if user is None:
+            raise NoResultFound
+
+        return user
+
+    def update_user(self, user_id: int, **kwargs) -> None:
+        """Update user"""
+        user = self.find_user_by(id=user_id)
+
+        cols = User.__table__.columns.keys()
+        for key in kwargs.keys():
+            if key not in cols:
+                raise ValueError
+
+        for key, value in kwargs.items():
+            setattr(user, key, value)
+
+        self._session.commit()
