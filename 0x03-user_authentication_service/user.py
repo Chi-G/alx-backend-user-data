@@ -36,4 +36,3 @@ if __name__ == '__main__':
     # Print column details in the expected format
     for column in User.__table__.columns:
         print("{}: {}".format(column.name, column.type))
-
