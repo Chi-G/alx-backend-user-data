@@ -2,17 +2,29 @@
 """
 Main file
 """
+from db import DB
 from user import User
 
-print(User.__tablename__)
+from sqlalchemy.exc import InvalidRequestError
+from sqlalchemy.orm.exc import NoResultFound
 
-for column in User.__table__.columns:
-    print("{}: {}".format(column, column.type))
 
-bob@dylan:~$ python3 main.py
-users
-users.id: INTEGER
-users.email: VARCHAR(250)
-users.hashed_password: VARCHAR(250)
-users.session_id: VARCHAR(250)
-users.reset_token: VARCHAR(250)
+my_db = DB()
+
+# user = my_db.add_user("tes@test.com", "PwdHashed")
+# print(user.id)
+
+find_user = my_db.update_user(id=1)
+print(find_user)
+
+# try:
+#     find_user = my_db.find_user_by(email="test@test.com")
+#     print(find_user.id)
+# except NoResultFound:
+#     print("Not found")
+
+# try:
+#     find_user = my_db.find_user_by(no_email="test@test.com")
+#     print(find_user.id)
+# except InvalidRequestError:
+#     print("Invalid")        
